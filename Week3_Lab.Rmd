@@ -1,0 +1,173 @@
+---
+title: "Week3_Lab"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(printr)
+```
+
+```{r}
+data(mtcars)
+help(mtcars)
+head(mtcars)
+```
+
+```{r}
+aggregate(mpg ~ cyl, data=mtcars, mean)
+```
+
+```{r}
+aggregate(mpg ~ cyl + gear, data=mtcars, mean)
+```
+
+```{r}
+library(dplyr)
+results = mtcars %>%
+  group_by(cyl) %>%
+  summarise(mean_mpg = mean(mpg))
+results
+```
+
+```{r}
+results = mtcars %>%
+  group_by(cyl,gear) %>%
+  summarise(mean_mpg = mean(mpg))
+as.data.frame(results)
+```
+
+#A working examle with R
+
+```{r, echo=F}
+if (file.exists("mtcars.sqlite3"))
+{
+    file.remove("mtcars.sqlite3")
+}
+```
+
+```{r}
+library(dbplyr)
+# Create a connection ("con") to a database file:
+con <- DBI::dbConnect(RSQLite::SQLite(), "mtcars.sqlite3")
+# Write our data frame to the database in a table called "mtcars"
+DBI::dbWriteTable(con, "mtcars", mtcars)
+# Disconnect from our database
+DBI::dbDisconnect(con)
+```
+
+{r}
+copy_to(con, mtcars)
+
+This bit of code doesn't work.
+
+#Lets see if it worked
+
+```{r}
+list.files(pattern="*.sqlite3")
+```
+##Using this instead of the {sh} ls-lhrt...
+
+#Analyze using dplyr
+
+```{r}
+con <- DBI::dbConnect(RSQLite::SQLite(), "mtcars.sqlite3")
+mtcars2 <- tbl(con, "mtcars")
+g = mtcars2 %>% 
+    group_by(cyl) %>%
+    summarise(mean_mpg=mean(mpg))
+```
+
+```{r}
+g %>% show_query()
+```
+
+We need to `collect` it to execute the query:
+
+```{r}
+result = g %>% collect()
+as.data.frame(result)
+```
+
+#NOW to python
+
+```{r, echo=F}
+if (file.exists("mtcars_from_pandas.sqlite3"))
+{
+    file.remove("mtcars_from_pandas.sqlite3")
+}
+```
+
+```{r}
+library(reticulate)
+use_python("C:\\Users\\lbradle1\\Miniconda3", required = TRUE)
+```
+
+```{python}
+mtcars = r.mtcars
+mtcars.head()
+```
+
+```{python}
+mtcars.groupby(['cyl'])['mpg'].mean()
+```
+
+And the other one:
+
+```{python}
+mtcars.groupby(['cyl', 'gear'])['mpg'].mean()
+```
+
+```{python}
+import sqlite3 # Built into the Python language!
+con = sqlite3.connect("mtcars_from_pandas.sqlite3")
+# Add our data frame to the mtcars table in the database
+mtcars.to_sql("mtcars", con)
+con.close()
+```
+
+```{r}
+list.files(pattern="*.sqlite3")
+```
+
+#Read back in 
+
+```{python}
+import pandas as pd
+con = sqlite3.connect("mtcars_from_pandas.sqlite3")
+df = pd.read_sql("select * from mtcars", con)
+df.head()
+```
+
+```{python}
+df = pd.read_sql("select cyl, avg(mpg) from mtcars group by cyl", con)
+df.head()
+```
+
+```{python}
+df = pd.read_sql("select cyl, gear, avg(mpg) from mtcars group by cyl, gear", con)
+df.head()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##Some random code notes that may be helpful
+setwd()
+setwd()
+setwd("/path/to/file")
+
